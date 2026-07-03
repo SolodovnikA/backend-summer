@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.security.NoSuchAlgorithmException;
 
 @RestController
 public class FileController {
@@ -22,7 +24,8 @@ public class FileController {
     }
 
     @PostMapping("/files")
-    public ResponseEntity<FileIdResponse> sendFile(@RequestParam("file")MultipartFile file) throws IOException {
+    public ResponseEntity<FileIdResponse> sendFile(@RequestParam("file")MultipartFile file) throws IOException,
+            NoSuchAlgorithmException, FileAlreadyExistsException {
         Long fileId = uploadedFileService.uploadFile(file);
         FileIdResponse fileIdResponse = new FileIdResponse(String.valueOf(fileId));
         return ResponseEntity.status(HttpStatus.CREATED).body(fileIdResponse);

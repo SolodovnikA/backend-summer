@@ -5,9 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -34,10 +34,15 @@ public class UploadedFileService {
         String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(file.getBytes()));
 
         if (uploadedFileRepository.existsByHash(hash)) {
-            throw new IllegalArgumentException("Файл уже существует");
+            throw new FileAlreadyExistsException(file.getOriginalFilename());
         }
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
         Path path = Path.of(uploadDir).resolve(fileName);
+        Path uploadsAbsolute = Path.of(uploadDir).toAbsolutePath().normalize();
+        Path fileAbsolute = path.toAbsolutePath().normalize();
+        if (!fileAbsolute.startsWith(uploadsAbsolute)) {
+            throw new IllegalArgumentException("Файл лежит не там");
+        }
         Files.createDirectories(path.getParent());
         file.transferTo(path);
 
@@ -49,6 +54,7 @@ public class UploadedFileService {
 
         UploadedFile saved = uploadedFileRepository.save(uploadedFile);
         return saved.getId();
+
 
     }
 }

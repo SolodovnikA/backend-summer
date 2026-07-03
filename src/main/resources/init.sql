@@ -38,9 +38,14 @@ CREATE TABLE uploaded_files
     original_filename VARCHAR(50)  NOT NULL
         CONSTRAINT chk_file_name_length CHECK (length(original_filename) BETWEEN 3 AND 100),
     storage_path      VARCHAR(512) NOT NULL UNIQUE,
+    hash              VARCHAR(40) NOT NULL UNIQUE,
     status            VARCHAR(50)  NOT NULL DEFAULT 'NEW'
         CONSTRAINT chk_status_value CHECK (status IN ('NEW', 'IN_PROGRESS', 'DONE', 'FAILED')),
+    total_rows        INTEGER,
     inserted_rows     INTEGER,
+    processed_rows    INTEGER,
+    valid_rows        INTEGER,
+    invalid_rows      INTEGER,
     updated_rows      INTEGER
 );
 

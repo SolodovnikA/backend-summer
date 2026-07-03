@@ -1,7 +1,13 @@
 package ru.shift.userimporter.core.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "uploaded_files")
 public class UploadedFile {
@@ -18,39 +24,25 @@ public class UploadedFile {
     @Column(name = "status", nullable = false)
     private String status;
 
+    @Column(name = "hash", nullable = false, unique = true)
+    private String hash;
+
+    @Column(name = "total_rows")
+    private Integer totalRows;
+
+    @Column(name = "processed_rows")
+    private Integer processedRows;
+
+    @Column(name = "valid_rows")
+    private Integer validRows;
+
+    @Column(name = "invalid_rows")
+    private Integer invalidRows;
+
     @Column(name = "inserted_rows")
     private Integer insertedRows;
 
     @Column(name = "updated_rows")
     private Integer updatedRows;
 
-
-    public UploadedFile() {
-
-    }
-
-
-    public Long getId() { return id; }
-
-    public void setId(Long id) { this.id = id; }
-
-    public String getOriginalFileName() { return originalFileName; }
-
-    public void setOriginalFileName(String originalFileName) { this.originalFileName = originalFileName; }
-
-    public String getStoragePath() { return storagePath; }
-
-    public void setStoragePath(String storagePath) { this.storagePath = storagePath; }
-
-    public String getStatus() { return status; }
-
-    public void setStatus(String status) { this.status = status; }
-
-    public Integer getInsertedRows() { return insertedRows; }
-
-    public void setInsertedRows(Integer insertedRows) { this.insertedRows = insertedRows; }
-
-    public Integer getUpdatedRows() { return updatedRows; }
-
-    public void setUpdatedRows(Integer updatedRows) { this.updatedRows = updatedRows; }
 }

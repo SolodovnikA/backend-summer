@@ -1,7 +1,13 @@
 package ru.shift.userimporter.core.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "file_processing_errors")
 public class FileProcessingError {
@@ -25,33 +31,4 @@ public class FileProcessingError {
     @Column(name = "raw_data")
     private String rawData;
 
-
-    public FileProcessingError() {
-
-    }
-
-
-    public Long getId() { return id; }
-
-    public void setId(Long id) { this.id = id; }
-
-    public UploadedFile getUploadedFile() { return uploadedFile;}
-
-    public void setUploadedFile(UploadedFile uploadedFile) { this.uploadedFile = uploadedFile; }
-
-    public Integer getRowNumber() {return rowNumber; }
-
-    public void setRowNumber(Integer rowNumber) { this.rowNumber = rowNumber; }
-
-    public String getErrorMessage() { return errorMessage; }
-
-    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
-
-    public String getErrorCode() { return errorCode; }
-
-    public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
-
-    public String getRawData() { return rawData; }
-
-    public void setRawData(String rawData) { this.rawData = rawData; }
 }

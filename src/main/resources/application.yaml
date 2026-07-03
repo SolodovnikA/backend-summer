@@ -1,3 +1,7 @@
+app:
+  upload:
+    dir: uploads
+
 spring:
   application:
     name: user-importer

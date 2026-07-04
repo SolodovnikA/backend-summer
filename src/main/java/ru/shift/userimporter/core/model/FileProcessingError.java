@@ -32,10 +32,4 @@ public class FileProcessingError {
     @Column(name = "raw_data")
     private String rawData;
 
-
-    private void saveError(UploadedFile uploadedFile, Integer rowNumber, String errorMessage,
-                           ErrorCode errorCode) {
-
-    }
-
 }

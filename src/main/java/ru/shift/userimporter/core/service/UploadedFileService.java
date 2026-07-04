@@ -16,27 +16,31 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 
 import ru.shift.userimporter.core.exception.ResourceNotFoundException;
-import ru.shift.userimporter.core.model.FileStatus;
-import ru.shift.userimporter.core.model.UploadedFile;
+import ru.shift.userimporter.core.model.*;
 import ru.shift.userimporter.core.repository.FileProcessingErrorRepository;
 import ru.shift.userimporter.core.repository.UploadedFileRepository;
+import ru.shift.userimporter.core.repository.UserRepository;
 
 @Service
 public class UploadedFileService {
     private final UploadedFileRepository uploadedFileRepository;
     private final FileProcessingErrorRepository fileProcessingErrorRepository;
+    private final UserRepository userRepository;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
 
     public UploadedFileService(UploadedFileRepository uploadedFileRepository,
-                               FileProcessingErrorRepository fileProcessingErrorRepository) {
+                               FileProcessingErrorRepository fileProcessingErrorRepository,
+                               UserRepository userRepository) {
         this.uploadedFileRepository = uploadedFileRepository;
         this.fileProcessingErrorRepository = fileProcessingErrorRepository;
+        this.userRepository = userRepository;
     }
 
     public Long uploadFile(MultipartFile file) throws IOException, NoSuchAlgorithmException {
@@ -73,38 +77,61 @@ public class UploadedFileService {
     public void processFile(Long fileId) throws IOException {
         UploadedFile uploadedFile = uploadedFileRepository.findById(fileId).
                 orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+
         List<String> lines = Files.readAllLines(Path.of(uploadedFile.getStoragePath()), StandardCharsets.UTF_8);
         String namePattern = "^[А-Я][а-я'\\- ]{2,49}$";
         String emailPattern = "^\\w[\\w.+-]*@[\\w-]+\\.[a-zA-Z]{2,}$";
         String phonePattern = "^7\\d{10}$";
-        for (String line : lines) {
+        int totalRows = lines.size();
+        int processedRows = totalRows;
+        int insertedRows = 0;
+        int updatedRows = 0;
+        int invalidRows = 0;
+
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            int rowNumber = i + 1;
             String[] fields = line.split(",");
             if (fields.length != 6) {
-                System.out.println("Ошибка в строке: " + line);
+                saveError(uploadedFile, rowNumber, "Неверное количество полей в строке",
+                        ErrorCode.INVALID_FORMAT);
+                invalidRows++;
                 continue;
             }
             if (!fields[0].matches(namePattern)) {
-                System.out.println("Ошибка в имени!");
+                saveError(uploadedFile, rowNumber, "Неверный формат имени!",
+                        ErrorCode.INVALID_NAME);
+                invalidRows++;
                 continue;
             }
             if (!fields[1].matches(namePattern)) {
-                System.out.println("Ошибка в фамилии!");
+                saveError(uploadedFile, rowNumber, "Неверный формат фамилии!",
+                        ErrorCode.INVALID_LAST_NAME);
+                invalidRows++;
                 continue;
             }
             if (!fields[2].isEmpty() && !fields[2].matches(namePattern)) {
-                System.out.println("Ошибка в отчестве!");
+                saveError(uploadedFile, rowNumber, "Неверный формат отчества!",
+                        ErrorCode.INVALID_MIDDLE_NAME);
+                invalidRows++;
                 continue;
             }
             if (!fields[3].matches(emailPattern)) {
-                System.out.println("Ошибка в формате почты!");
+                saveError(uploadedFile, rowNumber, "Неверный формат почты!",
+                        ErrorCode.INVALID_EMAIL);
+                invalidRows++;
                 continue;
             }
             if (!fields[3].endsWith("@shift.ru") && !fields[3].endsWith("@shift.com")) {
-                System.out.println("Ошибка в домене почты!");
+                saveError(uploadedFile, rowNumber, "Неверный формат почты!",
+                        ErrorCode.INVALID_EMAIL);
+                invalidRows++;
                 continue;
             }
             if (!fields[4].matches(phonePattern)) {
-                System.out.println("Ошибка в номере телефона!");
+                saveError(uploadedFile, rowNumber, "Неверный формат номера телефона!",
+                        ErrorCode.INVALID_PHONE);
+                invalidRows++;
                 continue;
             }
             LocalDate birthDate;
@@ -113,15 +140,59 @@ public class UploadedFileService {
                 Period period = Period.between(birthDate, LocalDate.now());
                 int age = period.getYears();
                 if (age < 18) {
-                    System.out.println("Возраст меньше 18-ти лет");
+                    saveError(uploadedFile, rowNumber, "Пользователь младше 18-ти лет",
+                            ErrorCode.INVALID_BIRTHDATE);
+                    invalidRows++;
                     continue;
                 }
             } catch (DateTimeParseException e) {
-                System.out.println("Ошибка в дате рождения!");
+                saveError(uploadedFile, rowNumber, "Неверный формат даты рождения!",
+                        ErrorCode.INVALID_BIRTHDATE);
+                invalidRows++;
                 continue;
 
             }
+
+            Optional<User> existingUser  = userRepository.findByPhone(fields[4]);
+            User user = existingUser.orElseGet(User::new);
+            boolean isUpdate = existingUser.isPresent();
+            if (isUpdate) {
+                updatedRows++;
+            } else {
+                insertedRows++;
+            }
+
+            user.setFirstName(fields[0]);
+            user.setLastName(fields[1]);
+            user.setMiddleName(fields[2]);
+            user.setEmail(fields[3]);
+            user.setPhone(fields[4]);
+            user.setBirthDate(birthDate);
+
+            userRepository.save(user);
         }
+        int validRows = totalRows - invalidRows;
+        uploadedFile.setTotalRows(totalRows);
+        uploadedFile.setProcessedRows(processedRows);
+        uploadedFile.setInsertedRows(insertedRows);
+        uploadedFile.setUpdatedRows(updatedRows);
+        uploadedFile.setInvalidRows(invalidRows);
+        uploadedFile.setValidRows(validRows);
+        uploadedFile.setStatus(FileStatus.DONE);
+
+        uploadedFileRepository.save(uploadedFile);
+
+    }
+
+    private void saveError(UploadedFile uploadedFile, Integer rowNumber, String errorMessage,
+                           ErrorCode errorCode) {
+        FileProcessingError error = new FileProcessingError();
+        error.setUploadedFile(uploadedFile);
+        error.setRowNumber(rowNumber);
+        error.setErrorMessage(errorMessage);
+        error.setErrorCode(errorCode);
+
+        fileProcessingErrorRepository.save(error);
 
     }
 }

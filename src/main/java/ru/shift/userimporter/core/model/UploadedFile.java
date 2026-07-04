@@ -21,8 +21,9 @@ public class UploadedFile {
     @Column(name = "storage_path", nullable = false, unique = true)
     private String storagePath;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private FileStatus status;
 
     @Column(name = "hash", nullable = false, unique = true)
     private String hash;

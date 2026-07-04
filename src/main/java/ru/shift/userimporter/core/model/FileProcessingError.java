@@ -25,10 +25,17 @@ public class FileProcessingError {
     @Column(name = "error_message", nullable = false)
     private String errorMessage;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "error_code", nullable = false)
-    private String errorCode;
+    private ErrorCode errorCode;
 
     @Column(name = "raw_data")
     private String rawData;
+
+
+    private void saveError(UploadedFile uploadedFile, Integer rowNumber, String errorMessage,
+                           ErrorCode errorCode) {
+
+    }
 
 }

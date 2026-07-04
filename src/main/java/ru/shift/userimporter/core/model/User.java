@@ -4,10 +4,14 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,10 +40,12 @@ public class User {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
-    @Column(name = "updated_at", insertable = false)
+    @LastModifiedDate
+    @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
 

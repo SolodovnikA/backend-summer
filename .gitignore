@@ -10,8 +10,6 @@
 /dataSources.local.xml
 .gradle
 .idea
-
-# Local Files
-.DS_Store
 build/
+.DS_Store
 uploads/

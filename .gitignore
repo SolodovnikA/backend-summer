@@ -10,3 +10,4 @@
 /dataSources.local.xml
 .gradle
 .idea
+build/

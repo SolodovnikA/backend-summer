@@ -1,5 +1,6 @@
 package ru.shift.userimporter.core.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,12 @@ import ru.shift.userimporter.core.repository.UploadedFileRepository;
 import ru.shift.userimporter.core.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UploadedFileService {
+    private static final String NAME_PATTERN = "^[А-Я][а-я'\\- ]{2,49}$";
+    private static final String EMAIL_PATTERN = "^\\w[\\w.+-]*@[\\w-]+\\.[a-zA-Z]{2,}$";
+    private static final String PHONE_PATTERN = "^7\\d{10}$";
+
     private final UploadedFileRepository uploadedFileRepository;
     private final FileProcessingErrorRepository fileProcessingErrorRepository;
     private final UserRepository userRepository;
@@ -35,13 +41,6 @@ public class UploadedFileService {
     @Value("${app.upload.dir}")
     private String uploadDir;
 
-    public UploadedFileService(UploadedFileRepository uploadedFileRepository,
-                               FileProcessingErrorRepository fileProcessingErrorRepository,
-                               UserRepository userRepository) {
-        this.uploadedFileRepository = uploadedFileRepository;
-        this.fileProcessingErrorRepository = fileProcessingErrorRepository;
-        this.userRepository = userRepository;
-    }
 
     public Long uploadFile(MultipartFile file) throws IOException, NoSuchAlgorithmException {
         if (file.isEmpty()) {
@@ -79,9 +78,7 @@ public class UploadedFileService {
                 orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
 
         List<String> lines = Files.readAllLines(Path.of(uploadedFile.getStoragePath()), StandardCharsets.UTF_8);
-        String namePattern = "^[А-Я][а-я'\\- ]{2,49}$";
-        String emailPattern = "^\\w[\\w.+-]*@[\\w-]+\\.[a-zA-Z]{2,}$";
-        String phonePattern = "^7\\d{10}$";
+
         int totalRows = lines.size();
         int processedRows = totalRows;
         int insertedRows = 0;
@@ -98,25 +95,25 @@ public class UploadedFileService {
                 invalidRows++;
                 continue;
             }
-            if (!fields[0].matches(namePattern)) {
+            if (!fields[0].matches(NAME_PATTERN)) {
                 saveError(uploadedFile, rowNumber, "Неверный формат имени!",
                         ErrorCode.INVALID_NAME);
                 invalidRows++;
                 continue;
             }
-            if (!fields[1].matches(namePattern)) {
+            if (!fields[1].matches(NAME_PATTERN)) {
                 saveError(uploadedFile, rowNumber, "Неверный формат фамилии!",
                         ErrorCode.INVALID_LAST_NAME);
                 invalidRows++;
                 continue;
             }
-            if (!fields[2].isEmpty() && !fields[2].matches(namePattern)) {
+            if (!fields[2].isEmpty() && !fields[2].matches(NAME_PATTERN)) {
                 saveError(uploadedFile, rowNumber, "Неверный формат отчества!",
                         ErrorCode.INVALID_MIDDLE_NAME);
                 invalidRows++;
                 continue;
             }
-            if (!fields[3].matches(emailPattern)) {
+            if (!fields[3].matches(EMAIL_PATTERN)) {
                 saveError(uploadedFile, rowNumber, "Неверный формат почты!",
                         ErrorCode.INVALID_EMAIL);
                 invalidRows++;
@@ -128,7 +125,7 @@ public class UploadedFileService {
                 invalidRows++;
                 continue;
             }
-            if (!fields[4].matches(phonePattern)) {
+            if (!fields[4].matches(PHONE_PATTERN)) {
                 saveError(uploadedFile, rowNumber, "Неверный формат номера телефона!",
                         ErrorCode.INVALID_PHONE);
                 invalidRows++;

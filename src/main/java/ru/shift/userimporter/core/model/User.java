@@ -8,8 +8,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -42,11 +42,11 @@ public class User {
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at")
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
 
 }

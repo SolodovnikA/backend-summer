@@ -152,7 +152,7 @@ public class UploadedFileService {
 
                 user.setFirstName(fields[0]);
                 user.setLastName(fields[1]);
-                user.setMiddleName(fields[2]);
+                user.setMiddleName(fields[2].isEmpty() ? null : fields[2]);
                 user.setEmail(fields[3]);
                 user.setPhone(phone);
                 user.setBirthDate(validation.birthDate());

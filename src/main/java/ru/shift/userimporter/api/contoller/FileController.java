@@ -23,4 +23,11 @@ public class FileController {
         return uploadedFileService.uploadFile(file);
     }
 
+    @PostMapping("/{fileId}/processing")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void processFile(@PathVariable Long fileId) {
+        uploadedFileService.processFile(fileId);
+    }
+
+
 }

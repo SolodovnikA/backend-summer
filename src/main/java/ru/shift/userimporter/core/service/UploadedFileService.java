@@ -107,7 +107,7 @@ public class UploadedFileService {
     }
 
     @Transactional
-    public void processFile(Long fileId) throws IOException {
+    public void processFile(Long fileId) {
         UploadedFile uploadedFile = uploadedFileRepository.findById(fileId).
                 orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
 
@@ -159,6 +159,8 @@ public class UploadedFileService {
 
                 usersByPhone.put(phone, user);
             });
+        } catch (IOException e) {
+            throw new RuntimeException("Не удалось прочитать файл", e);
         }
 
         userRepository.saveAll(usersByPhone.values());

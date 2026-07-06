@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.shift.userimporter.api.dto.ErrorResponse;
 import ru.shift.userimporter.core.exception.ResourceNotFoundException;
 
-import java.nio.file.FileAlreadyExistsException;
+import ru.shift.userimporter.core.exception.FileAlreadyExistsException;
 
 @RestControllerAdvice
 @Slf4j

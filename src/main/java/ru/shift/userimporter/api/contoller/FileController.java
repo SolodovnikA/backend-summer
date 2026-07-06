@@ -9,9 +9,6 @@ import ru.shift.userimporter.core.service.UploadedFileService;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 
-import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.security.NoSuchAlgorithmException;
 
 @RequiredArgsConstructor
 @RequestMapping("/files")
@@ -22,10 +19,8 @@ public class FileController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public FileIdResponse sendFile(@RequestParam("file")MultipartFile file) throws IOException,
-            NoSuchAlgorithmException, FileAlreadyExistsException {
-        Long fileId = uploadedFileService.uploadFile(file);
-        return new FileIdResponse(String.valueOf(fileId));
+    public FileIdResponse sendFile(@RequestParam("file")MultipartFile file) {
+        return uploadedFileService.uploadFile(file);
     }
 
 }

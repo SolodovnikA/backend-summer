@@ -8,9 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileAlreadyExistsException;
+import ru.shift.userimporter.core.exception.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 
+import ru.shift.userimporter.api.dto.FileIdResponse;
 import ru.shift.userimporter.core.exception.ResourceNotFoundException;
 import ru.shift.userimporter.core.model.*;
 import ru.shift.userimporter.core.repository.FileProcessingErrorRepository;
@@ -42,11 +44,24 @@ public class UploadedFileService {
     private String uploadDir;
 
 
-    public Long uploadFile(MultipartFile file) throws IOException, NoSuchAlgorithmException {
+    public FileIdResponse uploadFile(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Файл пустой");
         }
-        String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(file.getBytes()));
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e){
+            throw new IllegalArgumentException("Алгоритм SHA-1 недоступен", e);
+        }
+
+        try(DigestInputStream digestInputStream = new DigestInputStream(file.getInputStream(),
+                digest)) {
+            digestInputStream.readAllBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Не удалось получить содержимое файла", e);
+        }
+        String hash = HexFormat.of().formatHex(digest.digest());
 
         if (uploadedFileRepository.existsByHash(hash)) {
             throw new FileAlreadyExistsException(file.getOriginalFilename());
@@ -58,17 +73,24 @@ public class UploadedFileService {
         if (!fileAbsolute.startsWith(uploadsAbsolute)) {
             throw new IllegalArgumentException("Файл лежит не там");
         }
-        Files.createDirectories(path.getParent());
-        file.transferTo(path);
 
-        UploadedFile uploadedFile = new UploadedFile();
-        uploadedFile.setOriginalFileName(file.getOriginalFilename());
-        uploadedFile.setStoragePath(path.toString());
-        uploadedFile.setStatus(FileStatus.NEW);
-        uploadedFile.setHash(hash);
+        try {
+            Files.createDirectories(path.getParent());
+            file.transferTo(path);
+        } catch (IOException e) {
+            throw new RuntimeException("Не удалось сохранить файл", e);
+        }
+
+        UploadedFile uploadedFile = UploadedFile.builder()
+                .originalFileName(file.getOriginalFilename())
+                .storagePath(path.toString())
+                .status(FileStatus.NEW)
+                .hash(hash)
+                .build();
+
 
         UploadedFile saved = uploadedFileRepository.save(uploadedFile);
-        return saved.getId();
+        return new FileIdResponse(String.valueOf(saved.getId()));
 
     }
 

@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import ru.shift.userimporter.api.dto.FileStatistic;
 import ru.shift.userimporter.core.exception.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -217,6 +218,14 @@ public class UploadedFileService {
         } catch (DateTimeParseException e) {
             return RowValidationResult.invalid(ErrorCode.INVALID_BIRTHDATE, "Неверный формат даты рождения!");
         }
+    }
+
+    public FileStatistic getStatistics() {
+        int inserted = uploadedFileRepository.sumInsertedRows().intValue();
+        int updated = uploadedFileRepository.sumUpdatedRows().intValue();
+        int invalid = uploadedFileRepository.sumInvalidRows().intValue();
+
+        return new FileStatistic(inserted, updated, invalid);
     }
 
 }

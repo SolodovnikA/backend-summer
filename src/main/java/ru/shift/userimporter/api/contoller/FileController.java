@@ -3,12 +3,16 @@ package ru.shift.userimporter.api.contoller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.shift.userimporter.api.dto.FileIdResponse;
+import ru.shift.userimporter.api.dto.FileResponse;
 import ru.shift.userimporter.api.dto.FileStatistic;
+import ru.shift.userimporter.core.model.FileStatus;
 import ru.shift.userimporter.core.service.UploadedFileService;
 
 
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
+
+import java.util.List;
 
 
 @RequiredArgsConstructor
@@ -31,8 +35,8 @@ public class FileController {
     }
 
     @GetMapping("/statistics")
-    public FileStatistic getStatistics() {
-        return uploadedFileService.getStatistics();
+    public List<FileResponse> getFiles(@RequestParam(required = false) FileStatus status){
+        return uploadedFileService.getFiles(status);
     }
 
 

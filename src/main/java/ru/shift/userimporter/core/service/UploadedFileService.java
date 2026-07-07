@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import ru.shift.userimporter.api.dto.FileResponse;
 import ru.shift.userimporter.api.dto.FileStatistic;
 import ru.shift.userimporter.core.exception.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -219,12 +220,27 @@ public class UploadedFileService {
         }
     }
 
-    public FileStatistic getStatistics() {
-        int inserted = uploadedFileRepository.sumInsertedRows().intValue();
-        int updated = uploadedFileRepository.sumUpdatedRows().intValue();
-        int invalid = uploadedFileRepository.sumInvalidRows().intValue();
-
-        return new FileStatistic(inserted, updated, invalid);
+    private FileResponse toFileResponse(UploadedFile file) {
+        FileStatistic statistic = new FileStatistic(
+                file.getInsertedRows() == null ? 0 : file.getInsertedRows(),
+                file.getUpdatedRows() == null ? 0 : file.getUpdatedRows(),
+                file.getInvalidRows() == null ? 0 : file.getInvalidRows()
+        );
+        return new FileResponse(String.valueOf(file.getId()), file.getStatus().name(), statistic);
     }
+
+    public List<FileResponse> getFiles(FileStatus status) {
+        List<UploadedFile> files = status != null
+                ? uploadedFileRepository.findByStatus(status)
+                : uploadedFileRepository.findAll();
+
+        return files.stream()
+                .map(this :: toFileResponse)
+                .toList();
+    }
+
+
+
+
 
 }

@@ -9,8 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import ru.shift.userimporter.api.dto.FileResponse;
-import ru.shift.userimporter.api.dto.FileStatistic;
+import ru.shift.userimporter.api.dto.*;
 import ru.shift.userimporter.core.exception.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,7 +23,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import ru.shift.userimporter.api.dto.FileIdResponse;
 import ru.shift.userimporter.core.exception.ResourceNotFoundException;
 import ru.shift.userimporter.core.model.*;
 import ru.shift.userimporter.core.repository.FileProcessingErrorRepository;
@@ -239,7 +237,23 @@ public class UploadedFileService {
                 .toList();
     }
 
+    private ProcessingError toProcessingError(FileProcessingError error) {
+        return new ProcessingError(error.getRowNumber(), error.getErrorCode().name(), error.getErrorMessage());
+    }
 
+    public DetailedFileStatistic getDetailedStatistic(Long fileId) {
+        UploadedFile file = uploadedFileRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+
+        List<ProcessingError> errors = fileProcessingErrorRepository.findByUploadedFileId(fileId).stream()
+                .map(this::toProcessingError)
+                .toList();
+
+        int inserted = file.getInsertedRows() == null ? 0 : file.getInsertedRows();
+        int updated = file.getUpdatedRows() == null ? 0 : file.getUpdatedRows();
+
+        return new DetailedFileStatistic(inserted, updated, errors);
+    }
 
 
 

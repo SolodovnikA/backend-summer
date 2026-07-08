@@ -7,7 +7,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import ru.shift.userimporter.core.model.*;
-import ru.shift.userimporter.core.repository.UploadedFileRepository;
 import ru.shift.userimporter.core.validator.RowValidator;
 
 import java.io.IOException;
@@ -20,12 +19,17 @@ import java.util.stream.Stream;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class FileProcessingRunner {
-
-    private final UploadedFileRepository uploadedFileRepository;
     private final FileProcessingErrorService fileProcessingErrorService;
     private final UserService userService;
+
+    public FileProcessingRunner(FileProcessingErrorService fileProcessingErrorService,
+                                UserService userService,
+                                @Lazy UploadedFileService uploadedFileService) {
+        this.fileProcessingErrorService = fileProcessingErrorService;
+        this.userService = userService;
+        this.uploadedFileService = uploadedFileService;
+    }
 
     @Lazy
     private final UploadedFileService uploadedFileService;
@@ -88,26 +92,12 @@ public class FileProcessingRunner {
                 throw new RuntimeException("Не удалось прочитать файл", e);
             }
 
-            userService.saveUsers(usersByPhone.values());
-            fileProcessingErrorService.saveErrors(errorsToSave);
+            uploadedFileService.completeProcessing(fileId, usersByPhone.values(), errorsToSave,
+                    totalRows.get(), insertedRows.get(), updatedRows.get(), invalidRows.get());
 
-            int total = totalRows.get();
-            int invalid = invalidRows.get();
-            int valid = total - invalid;
-
-            uploadedFile.setTotalRows(total);
-            uploadedFile.setProcessedRows(total);
-            uploadedFile.setUpdatedRows(updatedRows.get());
-            uploadedFile.setInsertedRows(insertedRows.get());
-            uploadedFile.setInvalidRows(invalid);
-            uploadedFile.setValidRows(valid);
-            uploadedFile.setStatus(FileStatus.DONE);
-
-            uploadedFileRepository.save(uploadedFile);
         } catch (Exception e) {
             log.error("Ошибка при обработке файла с ID {}", fileId, e);
-            uploadedFile.setStatus(FileStatus.FAILED);
-            uploadedFileRepository.save(uploadedFile);
+            uploadedFileService.markAsFailed(fileId);
         }
     }
 

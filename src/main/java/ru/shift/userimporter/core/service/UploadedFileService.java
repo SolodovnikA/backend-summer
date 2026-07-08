@@ -1,8 +1,10 @@
 package ru.shift.userimporter.core.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -29,6 +31,8 @@ public class UploadedFileService {
     private final UploadedFileRepository uploadedFileRepository;
     private final FileProcessingErrorRepository fileProcessingErrorRepository;
     private final FileProcessingRunner fileProcessingRunner;
+    private final UserService userService;
+    private final FileProcessingErrorService fileProcessingErrorService;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -151,5 +155,33 @@ public class UploadedFileService {
         int updated = file.getUpdatedRows() == null ? 0 : file.getUpdatedRows();
 
         return new DetailedFileStatistic(inserted, updated, errors);
+    }
+
+
+    @Transactional
+    public void completeProcessing(Long fileId, Collection<User> users, List<FileProcessingError> errors,
+                                   int total, int inserted, int updated, int invalid) {
+
+        UploadedFile uploadedFile = getOrThrow(fileId);
+        userService.saveUsers(users);
+        fileProcessingErrorService.saveErrors(errors);
+
+        int valid = total - invalid;
+        uploadedFile.setTotalRows(total);
+        uploadedFile.setProcessedRows(total);
+        uploadedFile.setUpdatedRows(updated);
+        uploadedFile.setInsertedRows(inserted);
+        uploadedFile.setInvalidRows(invalid);
+        uploadedFile.setValidRows(valid);
+        uploadedFile.setStatus(FileStatus.DONE);
+        uploadedFileRepository.save(uploadedFile);
+    }
+
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markAsFailed(Long fileId) {
+        UploadedFile uploadedFile = getOrThrow(fileId);
+        uploadedFile.setStatus(FileStatus.FAILED);
+        uploadedFileRepository.save(uploadedFile);
     }
 }

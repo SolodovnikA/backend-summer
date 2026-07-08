@@ -2,6 +2,7 @@ package ru.shift.userimporter.core.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -32,11 +33,13 @@ public class FileProcessingRunner {
     private final FileProcessingErrorService fileProcessingErrorService;
     private final UserService userService;
 
+    @Lazy
+    private final UploadedFileService uploadedFileService;
+
 
     @Async
     public void runAsync(Long fileId) {
-        UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+        UploadedFile uploadedFile =  uploadedFileService.getOrThrow(fileId);
 
         try {
             AtomicInteger totalRows = new AtomicInteger(0);

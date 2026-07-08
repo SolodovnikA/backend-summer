@@ -20,7 +20,6 @@ import ru.shift.userimporter.core.exception.ResourceNotFoundException;
 import ru.shift.userimporter.core.model.*;
 import ru.shift.userimporter.core.repository.FileProcessingErrorRepository;
 import ru.shift.userimporter.core.repository.UploadedFileRepository;
-import ru.shift.userimporter.core.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +27,6 @@ public class UploadedFileService {
 
     private final UploadedFileRepository uploadedFileRepository;
     private final FileProcessingErrorRepository fileProcessingErrorRepository;
-    private final UserRepository userRepository;
     private final FileProcessingRunner fileProcessingRunner;
 
     @Value("${app.upload.dir}")
@@ -85,10 +83,14 @@ public class UploadedFileService {
 
     }
 
+    public UploadedFile getOrThrow(Long fileId) {
+        return uploadedFileRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+    }
+
 
     public void processFile(Long fileId) {
-        UploadedFile uploadedFile = uploadedFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+        UploadedFile uploadedFile = getOrThrow(fileId);
 
         if (uploadedFile.getStatus() == FileStatus.IN_PROGRESS) {
             throw new IllegalArgumentException("Файл уже находится в обработке");
@@ -125,8 +127,7 @@ public class UploadedFileService {
     }
 
     public DetailedFileStatistic getDetailedStatistic(Long fileId) {
-        UploadedFile file = uploadedFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+        UploadedFile file = getOrThrow(fileId);
 
         List<ProcessingError> errors = fileProcessingErrorRepository.findByUploadedFileId(fileId).stream()
                 .map(this::toProcessingError)

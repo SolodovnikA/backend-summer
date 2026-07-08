@@ -7,9 +7,7 @@ import org.springframework.stereotype.Component;
 
 import ru.shift.userimporter.core.exception.ResourceNotFoundException;
 import ru.shift.userimporter.core.model.*;
-import ru.shift.userimporter.core.repository.FileProcessingErrorRepository;
 import ru.shift.userimporter.core.repository.UploadedFileRepository;
-import ru.shift.userimporter.core.repository.UserRepository;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,19 +29,9 @@ public class FileProcessingRunner {
     private static final String PHONE_PATTERN  = "^7\\d{10}$";
 
     private final UploadedFileRepository uploadedFileRepository;
-    private final FileProcessingErrorRepository fileProcessingErrorRepository;
-    private final UserRepository userRepository;
+    private final FileProcessingErrorService fileProcessingErrorService;
+    private final UserService userService;
 
-    private FileProcessingError buildError(UploadedFile uploadedFile, int rowNumber,
-                                            String errorMessage, ErrorCode errorCode) {
-        FileProcessingError error = new FileProcessingError();
-        error.setUploadedFile(uploadedFile);
-        error.setRowNumber(rowNumber);
-        error.setErrorMessage(errorMessage);
-        error.setErrorCode(errorCode);
-
-        return error;
-    }
 
     @Async
     public void runAsync(Long fileId) {
@@ -67,8 +55,8 @@ public class FileProcessingRunner {
 
                     RowValidationResult validation = validateRow(fields);
                     if (!validation.valid()) {
-                        errorsToSave.add(buildError(uploadedFile, rowNumber, validation.errorMessage(),
-                                validation.errorCode()));
+                        errorsToSave.add(fileProcessingErrorService.buildError(uploadedFile, rowNumber,
+                                validation.errorMessage(), validation.errorCode()));
                         invalidRows.incrementAndGet();
                         return;
                     }
@@ -79,7 +67,7 @@ public class FileProcessingRunner {
                     if (user != null) {
                         isUpdate = true;
                     } else {
-                        Optional<User> existingUser = userRepository.findByPhone(phone);
+                        Optional<User> existingUser = userService.findByPhone(phone);
                         user = existingUser.orElseGet(User::new);
                         isUpdate = existingUser.isPresent();
                     }
@@ -103,8 +91,8 @@ public class FileProcessingRunner {
                 throw new RuntimeException("Не удалось прочитать файл", e);
             }
 
-            userRepository.saveUsers(usersByPhone.values());
-            fileProcessingErrorRepository.saveErrors(errorsToSave);
+            userService.saveUsers(usersByPhone.values());
+            fileProcessingErrorService.saveErrors(errorsToSave);
 
             int total = totalRows.get();
             int invalid = invalidRows.get();

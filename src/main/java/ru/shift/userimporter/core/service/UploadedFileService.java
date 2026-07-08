@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 import ru.shift.userimporter.api.dto.*;
+import ru.shift.userimporter.api.mapper.FileMapper;
 import ru.shift.userimporter.core.exception.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -103,34 +104,22 @@ public class UploadedFileService {
     }
 
 
-    private FileResponse toFileResponse(UploadedFile file) {
-        FileStatistic statistic = new FileStatistic(
-                file.getInsertedRows() == null ? 0 : file.getInsertedRows(),
-                file.getUpdatedRows() == null ? 0 : file.getUpdatedRows(),
-                file.getInvalidRows() == null ? 0 : file.getInvalidRows()
-        );
-        return new FileResponse(String.valueOf(file.getId()), file.getStatus().name(), statistic);
-    }
-
     public List<FileResponse> getFiles(FileStatus status) {
         List<UploadedFile> files = status != null
                 ? uploadedFileRepository.findByStatus(status)
                 : uploadedFileRepository.findAll();
 
         return files.stream()
-                .map(this :: toFileResponse)
+                .map(FileMapper::toFileResponse)
                 .toList();
     }
 
-    private ProcessingError toProcessingError(FileProcessingError error) {
-        return new ProcessingError(error.getRowNumber(), error.getErrorCode().name(), error.getErrorMessage());
-    }
 
     public DetailedFileStatistic getDetailedStatistic(Long fileId) {
         UploadedFile file = getOrThrow(fileId);
 
         List<ProcessingError> errors = fileProcessingErrorRepository.findByUploadedFileId(fileId).stream()
-                .map(this::toProcessingError)
+                .map(FileMapper::toProcessingError)
                 .toList();
 
         int inserted = file.getInsertedRows() == null ? 0 : file.getInsertedRows();

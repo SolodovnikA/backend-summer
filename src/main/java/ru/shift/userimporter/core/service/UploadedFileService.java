@@ -11,7 +11,6 @@ import java.io.IOException;
 
 import ru.shift.userimporter.api.dto.*;
 import ru.shift.userimporter.api.mapper.FileMapper;
-import ru.shift.userimporter.core.exception.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -19,7 +18,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-import ru.shift.userimporter.core.exception.ResourceNotFoundException;
+import ru.shift.userimporter.core.exception.AppErrorCode;
+import ru.shift.userimporter.core.exception.AppException;
 import ru.shift.userimporter.core.model.*;
 import ru.shift.userimporter.core.repository.FileProcessingErrorRepository;
 import ru.shift.userimporter.core.repository.UploadedFileRepository;
@@ -44,7 +44,7 @@ public class UploadedFileService {
        String hash = computeHash(file);
 
         if (uploadedFileRepository.existsByHash(hash)) {
-            throw new FileAlreadyExistsException(file.getOriginalFilename());
+            throw new AppException(AppErrorCode.FILE_ALREADY_EXISTS, "Файл с таким содержимым уже существует");
         }
 
         Path path = storeFile(file);
@@ -82,7 +82,8 @@ public class UploadedFileService {
 
     public UploadedFile getOrThrow(Long fileId) {
         return uploadedFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+                .orElseThrow(() -> new AppException(AppErrorCode.RESOURCE_NOT_FOUND,
+                        "Файл с ID " + fileId + " не найден"));
     }
 
 

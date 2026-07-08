@@ -35,9 +35,30 @@ public class UploadedFileService {
 
 
     public FileIdResponse uploadFile(MultipartFile file) {
+
+       validateFile(file);
+       String hash = computeHash(file);
+
+        if (uploadedFileRepository.existsByHash(hash)) {
+            throw new FileAlreadyExistsException(file.getOriginalFilename());
+        }
+
+        Path path = storeFile(file);
+        UploadedFile saved = saveFileRecord(file, path, hash);
+
+        return new FileIdResponse(String.valueOf(saved.getId()));
+
+    }
+
+
+    private void validateFile(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Файл пустой");
         }
+    }
+
+
+    private String computeHash(MultipartFile file) {
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-1");
@@ -51,11 +72,17 @@ public class UploadedFileService {
         } catch (IOException e) {
             throw new RuntimeException("Не удалось получить содержимое файла", e);
         }
-        String hash = HexFormat.of().formatHex(digest.digest());
+        return HexFormat.of().formatHex(digest.digest());
+    }
 
-        if (uploadedFileRepository.existsByHash(hash)) {
-            throw new FileAlreadyExistsException(file.getOriginalFilename());
-        }
+
+    public UploadedFile getOrThrow(Long fileId) {
+        return uploadedFileRepository.findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
+    }
+
+
+    private Path storeFile(MultipartFile file) {
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
         Path path = Path.of(uploadDir).resolve(fileName);
         Path uploadsAbsolute = Path.of(uploadDir).toAbsolutePath().normalize();
@@ -70,7 +97,12 @@ public class UploadedFileService {
         } catch (IOException e) {
             throw new RuntimeException("Не удалось сохранить файл", e);
         }
+        return path;
 
+    }
+
+
+    private UploadedFile saveFileRecord(MultipartFile file, Path path, String hash) {
         UploadedFile uploadedFile = UploadedFile.builder()
                 .originalFileName(file.getOriginalFilename())
                 .storagePath(path.toString())
@@ -78,15 +110,8 @@ public class UploadedFileService {
                 .hash(hash)
                 .build();
 
+        return uploadedFileRepository.save(uploadedFile);
 
-        UploadedFile saved = uploadedFileRepository.save(uploadedFile);
-        return new FileIdResponse(String.valueOf(saved.getId()));
-
-    }
-
-    public UploadedFile getOrThrow(Long fileId) {
-        return uploadedFileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Файл с ID " + fileId + " не найден"));
     }
 
 
@@ -127,7 +152,4 @@ public class UploadedFileService {
 
         return new DetailedFileStatistic(inserted, updated, errors);
     }
-
-
-
 }

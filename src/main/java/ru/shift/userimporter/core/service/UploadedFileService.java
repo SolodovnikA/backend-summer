@@ -127,8 +127,7 @@ public class UploadedFileService {
             throw new IllegalArgumentException("Файл уже находится в обработке");
         }
 
-        uploadedFile.setStatus(FileStatus.IN_PROGRESS);
-        uploadedFileRepository.save(uploadedFile);
+        markAsInProgress(uploadedFile);
 
         fileProcessingRunner.runAsync(fileId);
     }
@@ -183,6 +182,11 @@ public class UploadedFileService {
     public void markAsFailed(Long fileId) {
         UploadedFile uploadedFile = getOrThrow(fileId);
         uploadedFile.setStatus(FileStatus.FAILED);
+        uploadedFileRepository.save(uploadedFile);
+    }
+
+    private void markAsInProgress(UploadedFile uploadedFile) {
+        uploadedFile.setStatus(FileStatus.IN_PROGRESS);
         uploadedFileRepository.save(uploadedFile);
     }
 }

@@ -1,11 +1,14 @@
 package ru.shift.userimporter.core.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import ru.shift.userimporter.core.model.*;
+import ru.shift.userimporter.core.repository.UploadedFileRepository;
 import ru.shift.userimporter.core.validator.RowValidator;
 
 import java.io.IOException;
@@ -16,27 +19,18 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class FileProcessingRunner {
     private final FileProcessingErrorService fileProcessingErrorService;
     private final UserService userService;
-
-    public FileProcessingRunner(FileProcessingErrorService fileProcessingErrorService,
-                                UserService userService,
-                                @Lazy UploadedFileService uploadedFileService) {
-        this.fileProcessingErrorService = fileProcessingErrorService;
-        this.userService = userService;
-        this.uploadedFileService = uploadedFileService;
-    }
-
-    @Lazy
-    private final UploadedFileService uploadedFileService;
+    private final UploadedFileRepository uploadedFileRepository;
 
 
     @Async
-    public void runAsync(Long fileId) {
-        UploadedFile uploadedFile =  uploadedFileService.getOrThrow(fileId);
+    public void runAsync(UploadedFile uploadedFile) {
 
         try {
             AtomicInteger totalRows = new AtomicInteger(0);
@@ -91,13 +85,37 @@ public class FileProcessingRunner {
                 throw new RuntimeException("Не удалось прочитать файл", e);
             }
 
-            uploadedFileService.completeProcessing(fileId, usersByPhone.values(), errorsToSave,
-                    totalRows.get(), insertedRows.get(), updatedRows.get(), invalidRows.get());
+            completeProcessing(uploadedFile, usersByPhone.values(), errorsToSave, totalRows.get(),
+                    insertedRows.get(), updatedRows.get(), invalidRows.get());
 
         } catch (Exception e) {
-            log.error("Ошибка при обработке файла с ID {}", fileId, e);
-            uploadedFileService.markAsFailed(fileId);
+            log.error("Ошибка при обработке файла с ID {}", uploadedFile.getId(), e);
+            markAsFailed(uploadedFile);
         }
+    }
+
+    @Transactional
+    public void completeProcessing(UploadedFile uploadedFile, Collection<User> users, List<FileProcessingError> errors,
+                                   int total, int inserted, int updated, int invalid) {
+
+        userService.saveUsers(users);
+        fileProcessingErrorService.saveErrors(errors);
+
+        int valid = total - invalid;
+        uploadedFile.setTotalRows(total);
+        uploadedFile.setProcessedRows(total);
+        uploadedFile.setUpdatedRows(updated);
+        uploadedFile.setInsertedRows(inserted);
+        uploadedFile.setInvalidRows(invalid);
+        uploadedFile.setValidRows(valid);
+        uploadedFile.setStatus(FileStatus.DONE);
+        uploadedFileRepository.save(uploadedFile);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markAsFailed(UploadedFile uploadedFile) {
+        uploadedFile.setStatus(FileStatus.FAILED);
+        uploadedFileRepository.save(uploadedFile);
     }
 
 }

@@ -1,14 +1,13 @@
 package ru.shift.userimporter.core.specifications;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 import org.springframework.data.jpa.domain.Specification;
 import ru.shift.userimporter.core.model.User;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@UtilityClass
 public class UserSpecifications {
 
-    public static Specification<User> hasPhone(Long phone) {
+    public Specification<User> hasPhone(Long phone) {
         if (phone == null) {
             return null;
         }
@@ -16,7 +15,7 @@ public class UserSpecifications {
                 String.valueOf(phone));
     }
 
-    public static Specification<User> hasFirstName(String firstName) {
+    public Specification<User> hasFirstName(String firstName) {
         if (firstName == null) {
             return null;
         }
@@ -24,7 +23,7 @@ public class UserSpecifications {
                 cb.equal(root.get("firstName"), firstName));
     }
 
-    public static  Specification<User> hasLastName(String lastName) {
+    public Specification<User> hasLastName(String lastName) {
         if (lastName == null) {
             return null;
         }
@@ -32,7 +31,7 @@ public class UserSpecifications {
                 cb.equal(root.get("lastName"), lastName));
     }
 
-    public static Specification<User> hasEmail(String email) {
+    public Specification<User> hasEmail(String email) {
         if (email == null) {
             return null;
         }

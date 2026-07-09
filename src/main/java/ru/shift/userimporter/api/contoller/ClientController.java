@@ -18,6 +18,7 @@ import java.util.List;
 @RestController
 public class ClientController {
     private final UserService userService;
+    private final ClientMapper clientMapper;
 
     @GetMapping
     public List<ClientResponse> getClients(@RequestParam(required = false) Long phone,
@@ -28,6 +29,6 @@ public class ClientController {
                                            @RequestParam(required = false, defaultValue = "100") int limit) {
 
         List<User> users = userService.findWithFilter(phone, name, lastName, email, offset, limit);
-        return ClientMapper.toClientResponseList(users);
+        return clientMapper.toClientResponseList(users);
     }
 }

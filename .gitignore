@@ -13,3 +13,6 @@
 build/
 .DS_Store
 uploads/
+gradle.properties
+out/
+src/main/generated/

@@ -30,11 +30,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleAppException(AppException ex) {
-        HttpStatus status = switch(ex.getErrorCode()) {
+        HttpStatus status = switch(ex.getAppErrorCode()) {
             case FILE_ALREADY_EXISTS -> HttpStatus.CONFLICT;
             case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
         };
-        log.warn("{}: {}", ex.getErrorCode(), ex.getMessage());
+        log.warn("{}: {}", ex.getAppErrorCode(), ex.getMessage());
         return ResponseEntity.status(status).body(new ErrorResponse(ex.getMessage()));
     }
 

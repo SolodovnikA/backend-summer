@@ -109,6 +109,6 @@ public class UploadedFileServiceTest {
                 "test.csv", "test1_csv", "text/csv", new byte[0]);
 
         assertThrows(IllegalArgumentException.class, () -> uploadedFileService.uploadFile(file));
-        
+
     }
 }

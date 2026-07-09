@@ -12,7 +12,7 @@ import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RowValidator {
-    private static final String NAME_PATTERN = "^[А-Я][а-я'\\- ]{2,49}$";
+    private static final String NAME_PATTERN = "^[А-ЯЁ][а-яё'\\- ]{2,49}$";
     private static final String EMAIL_PATTERN = "^\\w[\\w.+-]*@[\\w-]+\\.[a-zA-Z]{2,}$";
     private static final String PHONE_PATTERN  = "^7\\d{10}$";
     private static final Set<String> SUPPORTED_EMAIL_DOMAINS = Set.of("shift.ru", "shift.com");

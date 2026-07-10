@@ -1,4 +1,4 @@
-package ru.shift.userimporter.api.contoller;
+package ru.shift.userimporter.api.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
